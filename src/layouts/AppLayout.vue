@@ -85,11 +85,11 @@ async function logout() {
         <div class="flex size-9 items-center justify-center rounded-lg bg-indigo-600 text-white">
           <CalendarDays class="size-5" />
         </div>
-        <div class="leading-tight">
+        <div class="min-w-0 flex-1 leading-tight">
           <p class="truncate text-sm font-bold text-slate-900">{{ settings.app_name }}</p>
           <p class="truncate text-xs text-slate-500">{{ settings.app_subtitle }}</p>
         </div>
-        <button class="btn-ghost ml-auto p-1.5 lg:hidden" aria-label="Tutup menu" @click="sidebarOpen = false">
+        <button class="btn-ghost shrink-0 p-1.5 lg:hidden" aria-label="Tutup menu" @click="sidebarOpen = false">
           <X class="size-5" />
         </button>
       </div>
@@ -153,7 +153,8 @@ async function logout() {
         </button>
       </header>
 
-      <main class="p-4 sm:p-6">
+      <!-- isolate: elemen sticky di dalam konten tidak pernah tergambar di atas header/sidebar -->
+      <main class="isolate p-4 sm:p-6">
         <RouterView v-slot="{ Component, route: current }">
           <Transition name="page" mode="out-in">
             <component :is="Component" :key="current.path" />
