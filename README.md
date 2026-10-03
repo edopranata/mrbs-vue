@@ -62,6 +62,27 @@ Login memakai **username** (tidak peka huruf besar/kecil), bukan email.
 > **Ganti password akun-akun ini** (menu Profil) sebelum aplikasi dipakai di kantor. Menjalankan
 > ulang seeder tidak menimpa akun yang sudah ada.
 
+## Aplikasi terpasang (PWA)
+
+Aplikasi bisa di-install di desktop (Chrome/Edge) dan HP:
+
+- **Android / desktop**: tombol **Install Aplikasi** di sidebar atau halaman login (atau ikon install
+  di address bar browser).
+- **iPhone / iPad**: buka di Safari → **Bagikan** → **Tambah ke Layar Utama** (tombol di aplikasi
+  menampilkan langkahnya).
+
+Cara kerja:
+
+- `sw.js` dibuat otomatis saat build (template `pwa/sw-template.js`, plugin `mrbsServiceWorker` di
+  `vite.config.js`). Tampilan aplikasi (HTML, JS, CSS, ikon) disimpan di perangkat, sedangkan request
+  `/api` **selalu** ke server sehingga data jadwal tidak pernah usang.
+- Saat koneksi ke server terputus, aplikasi tetap terbuka dan menampilkan pemberitahuan; pengguna
+  tidak di-logout.
+- Setelah deploy, aplikasi menampilkan **"Versi baru tersedia → Muat ulang"**.
+- Service worker hanya aktif pada hasil build (bukan `npm run dev`) dan butuh HTTPS (kecuali localhost).
+- Ikon ada di `public/icons/`. Pada build Laravel, manifest disajikan backend di
+  `/manifest.webmanifest` sehingga nama aplikasi mengikuti menu Pengaturan.
+
 ## Build ke backend Laravel (satu domain)
 
 ```bash
