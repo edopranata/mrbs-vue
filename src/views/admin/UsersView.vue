@@ -205,8 +205,8 @@ async function remove(user) {
             autocapitalize="none"
             autocorrect="off"
             spellcheck="false"
-            pattern="[A-Za-z0-9._\-]{3,50}"
-            title="3–50 karakter: huruf, angka, titik, garis bawah, atau strip"
+            pattern="[A-Za-z0-9._\-]{2,50}"
+            title="2–50 karakter: huruf, angka, titik, garis bawah, atau strip"
             required
           />
           <p v-if="errors.username" class="field-error">{{ errors.username }}</p>
