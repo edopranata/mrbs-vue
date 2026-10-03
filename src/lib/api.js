@@ -14,6 +14,15 @@ api.interceptors.request.use((config) => {
 })
 
 let unauthorizedHandler = null
+let connectionHandler = null
+
+/**
+ * Dipanggil dengan true/false setiap kali server berhasil/gagal dihubungi. Lebih andal daripada
+ * navigator.onLine, yang tetap "online" saat WiFi tersambung tetapi internet tidak jalan.
+ */
+export function onConnectionChange(handler) {
+  connectionHandler = handler
+}
 
 /** Dipanggil saat API membalas 401/403-nonaktif (token kedaluwarsa / dicabut). */
 export function onUnauthorized(handler) {
@@ -21,8 +30,14 @@ export function onUnauthorized(handler) {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    connectionHandler?.(true)
+    return response
+  },
   (error) => {
+    if (error.response) connectionHandler?.(true)
+    else if (error.code !== 'ERR_CANCELED') connectionHandler?.(false)
+
     const status = error.response?.status
     const isLogin = error.config?.url?.includes('/auth/login')
     const deactivated = status === 403 && /dinonaktifkan/i.test(error.response?.data?.message ?? '')

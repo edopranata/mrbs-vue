@@ -1,13 +1,15 @@
 <script setup>
-import { AlertCircle, CalendarDays, Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+import { AlertCircle, CalendarDays, Download, Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorMessage } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
+import { usePwaStore } from '@/stores/pwa'
 import { useSettingsStore } from '@/stores/settings'
 
 const auth = useAuthStore()
 const settings = useSettingsStore()
+const pwa = usePwaStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -104,6 +106,15 @@ async function submit() {
             <Loader2 v-if="loading" class="size-4 animate-spin" /> Masuk
           </button>
         </form>
+
+        <button
+          v-if="pwa.canInstall"
+          type="button"
+          class="btn-ghost mt-6 w-full text-indigo-700 hover:bg-indigo-50"
+          @click="pwa.install()"
+        >
+          <Download class="size-4" /> Install aplikasi di perangkat ini
+        </button>
       </div>
     </div>
   </div>

@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CalendarPlus,
   ClipboardList,
+  Download,
   LayoutDashboard,
   ListChecks,
   Settings,
@@ -19,11 +20,13 @@ import BookingDetailModal from '@/components/BookingDetailModal.vue'
 import BookingFormModal from '@/components/BookingFormModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useBookingModal } from '@/stores/bookingModal'
+import { usePwaStore } from '@/stores/pwa'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
 
 const auth = useAuthStore()
 const settings = useSettingsStore()
+const pwa = usePwaStore()
 const modal = useBookingModal()
 const ui = useUiStore()
 const route = useRoute()
@@ -124,6 +127,13 @@ async function logout() {
       </nav>
 
       <div class="border-t border-slate-200 p-3">
+        <button
+          v-if="pwa.canInstall"
+          class="mb-2 flex w-full items-center gap-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100"
+          @click="pwa.install()"
+        >
+          <Download class="size-5" /> Install Aplikasi
+        </button>
         <RouterLink :to="{ name: 'profile' }" class="flex items-center gap-3 rounded-lg p-2 hover:bg-slate-100">
           <div class="flex size-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
             {{ initials }}
@@ -165,5 +175,6 @@ async function logout() {
 
     <BookingFormModal v-if="modal.formOpen" />
     <BookingDetailModal v-if="modal.detail" />
+
   </div>
 </template>
