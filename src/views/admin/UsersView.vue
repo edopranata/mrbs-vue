@@ -63,6 +63,7 @@ function openForm(user = null) {
   errors.value = {}
   Object.assign(form, {
     name: user?.name ?? '',
+    username: user?.username ?? '',
     email: user?.email ?? '',
     password: '',
     role: user?.role ?? 'user',
@@ -119,7 +120,7 @@ async function remove(user) {
     <div class="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center">
       <div class="relative flex-1">
         <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-        <input v-model="filters.search" class="input pl-9" placeholder="Cari nama, email, atau divisi…" />
+        <input v-model="filters.search" class="input pl-9" placeholder="Cari nama, username, email, atau divisi…" />
       </div>
       <select v-model="filters.role" class="input sm:w-40" aria-label="Level">
         <option value="">Semua level</option>
@@ -148,7 +149,7 @@ async function remove(user) {
               <p class="font-medium text-slate-900">
                 {{ u.name }} <span v-if="u.id === auth.user?.id" class="badge bg-slate-100 text-slate-600">Anda</span>
               </p>
-              <p class="text-xs text-slate-500">{{ u.email }}</p>
+              <p class="text-xs text-slate-500"><span class="font-medium text-slate-600">@{{ u.username }}</span> · {{ u.email }}</p>
             </td>
             <td>{{ u.department || '-' }}</td>
             <td>
@@ -192,6 +193,24 @@ async function remove(user) {
           <label class="label" for="u-name">Nama</label>
           <input id="u-name" v-model="form.name" class="input" :class="{ 'input-error': errors.name }" required />
           <p v-if="errors.name" class="field-error">{{ errors.name }}</p>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="label" for="u-username">Username <span class="font-normal text-slate-400">(untuk login)</span></label>
+          <input
+            id="u-username"
+            v-model.trim="form.username"
+            class="input"
+            :class="{ 'input-error': errors.username }"
+            placeholder="mis. budi.santoso"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
+            pattern="[A-Za-z0-9._\-]{3,50}"
+            title="3–50 karakter: huruf, angka, titik, garis bawah, atau strip"
+            required
+          />
+          <p v-if="errors.username" class="field-error">{{ errors.username }}</p>
+          <p v-else class="mt-1 text-xs text-slate-400">Huruf kecil, angka, titik, garis bawah, atau strip; tanpa spasi.</p>
         </div>
         <div class="sm:col-span-2">
           <label class="label" for="u-email">Email</label>

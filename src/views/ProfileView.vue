@@ -59,6 +59,11 @@ async function savePassword() {
         <p class="text-sm text-slate-500">Level akun: {{ auth.user?.role_label }}</p>
       </div>
       <div>
+        <label class="label" for="p-username">Username</label>
+        <input id="p-username" :value="auth.user?.username" class="input" disabled />
+        <p class="mt-1 text-xs text-slate-400">Dipakai untuk login. Hubungi admin untuk mengubahnya.</p>
+      </div>
+      <div>
         <label class="label" for="p-email">Email</label>
         <input id="p-email" :value="auth.user?.email" class="input" disabled />
       </div>

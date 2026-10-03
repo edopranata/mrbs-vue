@@ -11,7 +11,7 @@ const settings = useSettingsStore()
 const router = useRouter()
 const route = useRoute()
 
-const form = reactive({ email: '', password: '' })
+const form = reactive({ username: '', password: '' })
 const showPassword = ref(false)
 const loading = ref(false)
 const error = ref('')
@@ -21,7 +21,7 @@ async function submit() {
   loading.value = true
   error.value = ''
   try {
-    await auth.login(form.email, form.password)
+    await auth.login(form.username, form.password)
     const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/'
     router.replace(redirect)
   } catch (e) {
@@ -64,8 +64,19 @@ async function submit() {
             <AlertCircle class="mt-0.5 size-4 shrink-0" /> {{ error }}
           </div>
           <div>
-            <label class="label" for="email">Email</label>
-            <input id="email" v-model="form.email" type="email" class="input" autocomplete="username" required autofocus />
+            <label class="label" for="username">Username</label>
+            <input
+              id="username"
+              v-model="form.username"
+              type="text"
+              class="input"
+              autocomplete="username"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              required
+              autofocus
+            />
           </div>
           <div>
             <label class="label" for="password">Password</label>
