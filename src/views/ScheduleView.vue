@@ -191,7 +191,9 @@ function selectSlot({ room, date: day, start_time, end_time }) {
 <template>
   <div class="grid gap-5 lg:grid-cols-[15rem_1fr]">
     <!-- Kalender kecil -->
-    <aside class="hidden space-y-4 lg:block">
+    <!-- Menempel di bawah header aplikasi saat halaman di-scroll; bila layar terlalu pendek
+         untuk dua kalender, area ini bisa di-scroll sendiri. -->
+    <aside class="hidden space-y-4 lg:sticky lg:top-20 lg:block lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:pb-1">
       <MiniCalendar
         v-for="offset in [0, 1]"
         :key="offset"
@@ -248,7 +250,8 @@ function selectSlot({ room, date: day, start_time, end_time }) {
         </div>
       </div>
 
-      <div class="card relative overflow-hidden">
+      <!-- overflow-clip (bukan hidden) agar header grid tetap bisa menempel saat halaman di-scroll -->
+      <div class="card relative overflow-clip">
         <!-- Garis progres tipis saat memuat tanggal lain -->
         <div v-if="loading && shown" class="absolute inset-x-0 top-0 z-30 h-0.5 overflow-hidden bg-indigo-100">
           <div class="h-full w-1/3 animate-[loading-bar_1s_ease-in-out_infinite] bg-indigo-500" />
