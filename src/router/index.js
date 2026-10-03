@@ -57,9 +57,13 @@ router.beforeEach(async (to) => {
     if (!auth.verified) {
       try {
         await auth.fetchMe()
-      } catch {
-        auth.clear()
-        return { name: 'login' }
+      } catch (error) {
+        // Hanya keluar bila server menolak token. Gangguan jaringan (mis. offline di aplikasi
+        // yang terpasang) tidak boleh me-logout pengguna: lanjut dengan data user tersimpan.
+        if ([401, 403].includes(error.response?.status)) {
+          auth.clear()
+          return { name: 'login' }
+        }
       }
     }
   }
