@@ -13,7 +13,8 @@ terpisah: [edopranata/mrbs-backend](https://github.com/edopranata/mrbs-backend).
   (Internal/Eksternal), dan **booking berulang mingguan**.
 - **Booking Saya**: daftar booking mendatang, riwayat, dan yang dibatalkan.
 - **Ruangan**: daftar ruang rapat per lantai beserta kapasitas & fasilitas.
-- **Admin**: semua booking, manajemen ruangan & user.
+- **Admin**: **Semua Booking** (pantauan booking hari ini yang sedang berlangsung & akan datang,
+  diperbarui otomatis), manajemen ruangan & user.
 - **System Admin**: menu **Pengaturan** (nama aplikasi, jam operasional, interval slot, aturan
   booking).
 - Tampilan responsif (desktop sampai HP) dengan animasi halus; animasi otomatis dimatikan bila
@@ -50,14 +51,27 @@ Saat development, Vite meneruskan request `/api/*` ke backend, jadi tidak perlu 
 
 ## Akun default
 
-| Level | Email | Password |
+Login memakai **username** (tidak peka huruf besar/kecil), bukan email.
+
+| Level | Username | Password |
 |---|---|---|
-| System Admin | `sysadmin@kantor.test` | `password` |
-| Admin | `admin@kantor.test` | `password` |
-| User | `user@kantor.test` | `password` |
+| System Admin | `sysadmin` | `password` |
+| Admin | `admin` | `password` |
+| User | `user` | `password` |
 
 > **Ganti password akun-akun ini** (menu Profil) sebelum aplikasi dipakai di kantor. Menjalankan
 > ulang seeder tidak menimpa akun yang sudah ada.
+
+## Build ke backend Laravel (satu domain)
+
+```bash
+npm run build:laravel       # hasil build -> ../backend/public/app
+```
+
+Aset dimuat dari `/app/…`, sedangkan URL halaman tetap di root (`/`, `/jadwal`, …). Backend
+[mrbs-backend](https://github.com/edopranata/mrbs-backend) sudah menyiapkan route dan `.htaccess`
+agar semua URL halaman menampilkan `public/app/index.html`. Folder tujuan bisa diubah lewat
+`LARAVEL_APP_DIR` di `.env`.
 
 ## Build & deploy
 
