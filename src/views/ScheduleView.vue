@@ -41,6 +41,23 @@ const calMonth = ref(monthStart(date.value)) // bulan pertama pada kalender keci
 const schedule = ref(null)
 const loading = ref(false)
 
+// "Sorot booking saya": booking orang lain dipudarkan (tidak disembunyikan, agar slotnya tetap
+// terlihat terisi). Pilihan diingat di browser.
+const HIGHLIGHT_KEY = 'mrbs.highlightMine'
+const highlightMine = ref(false)
+try {
+  highlightMine.value = localStorage.getItem(HIGHLIGHT_KEY) === '1'
+} catch {
+  // penyimpanan browser tidak tersedia; pakai default
+}
+watch(highlightMine, (on) => {
+  try {
+    localStorage.setItem(HIGHLIGHT_KEY, on ? '1' : '0')
+  } catch {
+    // abaikan
+  }
+})
+
 // Tampilan yang sedang dirender. Diperbarui setelah data baru selesai dimuat,
 // sehingga animasi pergantian tidak sempat menampilkan grid kosong.
 const shown = ref(null) // { view, date, from }
@@ -264,12 +281,14 @@ function selectSlot({ room, date: day, start_time, end_time }) {
               :month="shown.date"
               :selected="date"
               :bookings="monthBookings"
+              :highlight-mine="highlightMine"
               @pick-date="pickDate($event, 'day')"
               @open="modal.show"
             />
             <TimeGrid
               v-else-if="columns.length"
               :columns="columns"
+              :highlight-mine="highlightMine"
               :open-time="schedule.open_time"
               :close-time="schedule.close_time"
               @select="selectSlot"
@@ -296,7 +315,10 @@ function selectSlot({ room, date: day, start_time, end_time }) {
         <span v-for="(t, key) in BOOKING_TYPES" :key="key" class="flex items-center gap-1.5">
           <span class="h-3.5 w-8 rounded-sm" :class="t.swatch" /> {{ t.label }}
         </span>
-        <span class="flex items-center gap-1.5"><span class="size-3.5 rounded-sm ring-2 ring-inset ring-indigo-500" /> Booking Anda</span>
+        <label class="flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-indigo-50">
+          <input v-model="highlightMine" type="checkbox" class="size-3.5 rounded-sm accent-indigo-600" />
+          <span class="rounded-sm px-1 ring-2 ring-inset ring-indigo-500">Sorot booking saya</span>
+        </label>
         <span class="flex items-center gap-1.5 text-slate-500">
           <Info class="size-4" />
           <template v-if="view === 'month'">Klik tanggal untuk melihat jadwal harian.</template>

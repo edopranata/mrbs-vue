@@ -18,6 +18,7 @@ const props = defineProps({
   columns: { type: Array, required: true },
   openTime: { type: String, default: '07:00' },
   closeTime: { type: String, default: '20:00' },
+  highlightMine: { type: Boolean, default: false }, // pudarkan booking milik orang lain
 })
 const emit = defineEmits(['select', 'open'])
 
@@ -232,7 +233,12 @@ function slotClass(col, m, i) {
               :key="b.id"
               type="button"
               class="absolute inset-x-0.5 origin-top animate-block-in overflow-hidden rounded-sm border-l-4 px-1.5 py-0.5 text-left transition hover:z-10 hover:shadow-lg"
-              :class="[bookingType(b.type).block, { 'ring-2 ring-indigo-500 ring-inset': b.user_id === auth.user?.id }]"
+              :class="[
+                bookingType(b.type).block,
+                b.user_id === auth.user?.id
+                  ? 'ring-2 ring-indigo-500 ring-inset'
+                  : highlightMine && 'opacity-30 saturate-0 hover:opacity-80 hover:saturate-100',
+              ]"
               :style="{ ...blockStyle(b), ...stagger(ci, 35) }"
               :title="`${b.title}\n${b.start_time}–${b.end_time} · ${b.user?.name ?? ''}`"
               @click="emit('open', b)"

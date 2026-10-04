@@ -2,13 +2,17 @@
 import { computed } from 'vue'
 import { bookingType } from '@/lib/bookingTypes'
 import { calendarDays, DAY_NAMES_SHORT, todayStr } from '@/lib/format'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
   month: { type: String, required: true },
   bookings: { type: Array, required: true }, // booking datar, masing-masing memuat `room`
   selected: { type: String, default: null },
+  highlightMine: { type: Boolean, default: false }, // pudarkan booking milik orang lain
 })
 const emit = defineEmits(['pick-date', 'open'])
+
+const auth = useAuthStore()
 
 const MAX_VISIBLE = 3
 const today = todayStr()
@@ -56,7 +60,12 @@ const byDate = computed(() => {
             :key="b.id"
             type="button"
             class="block w-full truncate rounded-sm border-l-2 px-1 py-px text-left text-[11px]"
-            :class="bookingType(b.type).block"
+            :class="[
+              bookingType(b.type).block,
+              b.user_id === auth.user?.id
+                ? 'ring-1 ring-indigo-500 ring-inset'
+                : highlightMine && 'opacity-30 saturate-0 hover:opacity-80 hover:saturate-100',
+            ]"
             :title="`${b.start_time}–${b.end_time} · ${b.room.name}\n${b.title}`"
             @click.stop="emit('open', b)"
           >
