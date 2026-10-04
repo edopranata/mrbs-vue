@@ -120,7 +120,7 @@ async function remove(user) {
     <div class="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center">
       <div class="relative flex-1">
         <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-        <input v-model="filters.search" class="input pl-9" placeholder="Cari nama, username, email, atau divisi…" />
+        <input v-model="filters.search" class="input pl-9" placeholder="Cari nama, username, email, atau department…" />
       </div>
       <select v-model="filters.role" class="input sm:w-40" aria-label="Level">
         <option value="">Semua level</option>
@@ -136,7 +136,7 @@ async function remove(user) {
         <thead>
           <tr>
             <th>Nama</th>
-            <th>Divisi</th>
+            <th>Department</th>
             <th>Level</th>
             <th>Status</th>
             <th class="text-right">Booking</th>
@@ -242,7 +242,7 @@ async function remove(user) {
           </select>
         </div>
         <div>
-          <label class="label" for="u-dept">Divisi</label>
+          <label class="label" for="u-dept">Department</label>
           <input id="u-dept" v-model="form.department" class="input" />
         </div>
         <div>

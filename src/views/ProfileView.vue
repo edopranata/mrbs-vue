@@ -73,7 +73,7 @@ async function savePassword() {
         <p v-if="profileErrors.name" class="field-error">{{ profileErrors.name }}</p>
       </div>
       <div>
-        <label class="label" for="p-dept">Divisi</label>
+        <label class="label" for="p-dept">Department</label>
         <input id="p-dept" v-model="profile.department" class="input" />
       </div>
       <div>
