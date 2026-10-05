@@ -1,5 +1,5 @@
 <script setup>
-import { AlertCircle, CheckCircle2, Loader2, Repeat, Users, XCircle } from 'lucide-vue-next'
+import { AlertCircle, CheckCircle2, Loader2, Monitor, Repeat, Users, XCircle } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import BaseModal from './BaseModal.vue'
 import api, { errorMessage, validationErrors } from '@/lib/api'
@@ -408,7 +408,7 @@ async function submit() {
               <label
                 v-for="room in group.rooms"
                 :key="room.id"
-                class="flex cursor-pointer gap-3 rounded-lg border p-3 transition"
+                class="flex h-full cursor-pointer gap-3 rounded-lg border p-3 transition"
                 :class="[
                   form.room_id === room.id
                     ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
@@ -456,6 +456,17 @@ async function submit() {
                   </span>
                   <span v-else class="mt-0.5 flex items-center gap-1 text-xs text-amber-600">
                     <AlertCircle class="size-3.5" /> Kapasitas tidak cukup
+                  </span>
+                  <!-- Fasilitas: selalu 2 baris agar semua kartu ruangan sama tinggi -->
+                  <span
+                    class="mt-1.5 flex h-8 items-start gap-1 text-xs leading-4 text-slate-500"
+                    :title="room.facilities?.length ? `Fasilitas: ${room.facilities.join(', ')}` : undefined"
+                  >
+                    <Monitor class="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                    <span class="line-clamp-2">
+                      <template v-if="room.facilities?.length">{{ room.facilities.join(' · ') }}</template>
+                      <span v-else class="italic text-slate-400">Fasilitas belum diisi</span>
+                    </span>
                   </span>
                 </span>
               </label>
