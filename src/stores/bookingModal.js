@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 
 /**
  * Mengontrol modal form & detail booking yang dirender global di AppLayout,
@@ -16,6 +17,7 @@ export const useBookingModal = defineStore('bookingModal', {
 
   actions: {
     create(defaults = {}) {
+      if (useAuthStore().isViewer) return
       this.editing = null
       this.defaults = defaults
       this.detail = null

@@ -35,12 +35,19 @@ const sidebarOpen = ref(false)
 
 settings.load().catch(() => {})
 
-const menu = [
+const mainMenu = [
   { name: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { name: 'schedule', label: 'Jadwal Ruangan', icon: CalendarDays },
   { name: 'my-bookings', label: 'Booking Saya', icon: ClipboardList },
   { name: 'rooms', label: 'Ruangan', icon: Building2 },
 ]
+// View Only: hanya melihat jadwal & booking.
+const viewerMenu = [
+  { name: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { name: 'schedule', label: 'Jadwal Ruangan', icon: CalendarDays },
+  { name: 'admin-bookings', label: 'Semua Booking', icon: ListChecks },
+]
+const menu = computed(() => (auth.isViewer ? viewerMenu : mainMenu))
 const adminMenu = [
   { name: 'admin-bookings', label: 'Semua Booking', icon: ListChecks },
   { name: 'admin-users', label: 'Manajemen User', icon: Users },
@@ -157,7 +164,7 @@ async function logout() {
           <Menu class="size-5" />
         </button>
         <h1 class="truncate text-lg font-semibold text-slate-900">{{ route.meta.title }}</h1>
-        <button class="btn-primary ml-auto" @click="modal.create()">
+        <button v-if="!auth.isViewer" class="btn-primary ml-auto" @click="modal.create()">
           <CalendarPlus class="size-4" />
           <span class="hidden sm:inline">Buat Booking</span>
         </button>

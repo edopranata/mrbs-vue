@@ -16,6 +16,12 @@ export const useAuthStore = defineStore('auth', {
     isAdmin: (state) => ['admin', 'system_admin'].includes(state.user?.role),
     /** System Admin: + menu Pengaturan & kelola akun System Admin. */
     isSystemAdmin: (state) => state.user?.role === 'system_admin',
+    /** View Only: hanya Dashboard, Jadwal Ruangan, dan Semua Booking; tidak bisa membuat booking. */
+    isViewer: (state) => state.user?.role === 'viewer',
+    /** Boleh membuka pantauan Semua Booking. */
+    canMonitor() {
+      return this.isAdmin || this.isViewer
+    },
   },
 
   actions: {

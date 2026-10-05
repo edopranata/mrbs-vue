@@ -16,6 +16,7 @@ const ROLE_BADGE = {
   system_admin: 'bg-rose-50 text-rose-700',
   admin: 'bg-purple-50 text-purple-700',
   user: 'bg-slate-100 text-slate-600',
+  viewer: 'bg-teal-50 text-teal-700',
 }
 
 /** Admin biasa tidak boleh mengubah/menghapus akun System Admin. */
@@ -127,6 +128,7 @@ async function remove(user) {
         <option value="system_admin">System Admin</option>
         <option value="admin">Admin</option>
         <option value="user">User</option>
+        <option value="viewer">View Only</option>
       </select>
       <button class="btn-primary" @click="openForm()"><Plus class="size-4" /> Tambah User</button>
     </div>
@@ -237,6 +239,7 @@ async function remove(user) {
           <label class="label" for="u-role">Level</label>
           <select id="u-role" v-model="form.role" class="input" :disabled="editing?.id === auth.user?.id">
             <option value="user">User</option>
+            <option value="viewer">View Only</option>
             <option value="admin">Admin</option>
             <option v-if="auth.isSystemAdmin || editing?.role === 'system_admin'" value="system_admin">System Admin</option>
           </select>

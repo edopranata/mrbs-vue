@@ -56,6 +56,8 @@ function isBooked(col, m) {
   return col.bookings.some((b) => timeToMinutes(b.start_time) < m + SLOT && timeToMinutes(b.end_time) > m)
 }
 const isFree = (col, m) => m >= open.value && m + SLOT <= close.value && !isPast(col, m) && !isBooked(col, m)
+/** Slot kosong yang bisa dipilih untuk booking (akun View Only hanya melihat). */
+const canPick = (col, m) => !auth.isViewer && isFree(col, m)
 
 // ---- Pemilihan slot (klik atau seret) ----
 const selection = ref(null) // { col, anchor, current }
@@ -72,7 +74,7 @@ const isSelected = (col, m) =>
 
 function onPointerDown(e, col, m) {
   lastPointer = e.pointerType
-  if (e.pointerType !== 'mouse' || e.button !== 0 || !isFree(col, m)) return
+  if (e.pointerType !== 'mouse' || e.button !== 0 || !canPick(col, m)) return
   e.preventDefault()
   selection.value = { col, anchor: m, current: m }
   dragging.value = true
@@ -107,7 +109,7 @@ function onPointerUp() {
 
 // Sentuhan (HP/tablet): tap = pilih satu slot, tanpa seret agar tetap bisa scroll.
 function onClick(col, m) {
-  if (lastPointer === 'mouse' || !isFree(col, m)) return
+  if (lastPointer === 'mouse' || !canPick(col, m)) return
   selection.value = { col, anchor: m, current: m }
   finish()
 }
@@ -152,7 +154,7 @@ const firstNowKey = computed(() => props.columns.find(showNow)?.key)
 function slotClass(col, m, i) {
   if (isSelected(col, m)) return 'bg-indigo-200'
   if (isPast(col, m)) return 'cursor-not-allowed bg-slate-100/80'
-  return [i % 2 ? 'bg-white' : 'bg-slate-50', 'cursor-pointer hover:bg-indigo-50']
+  return [i % 2 ? 'bg-white' : 'bg-slate-50', !auth.isViewer && 'cursor-pointer hover:bg-indigo-50']
 }
 </script>
 
@@ -209,7 +211,7 @@ function slotClass(col, m, i) {
               class="border-b border-slate-100 transition-colors"
               :class="slotClass(col, m, i)"
               :style="{ height: `${ROW_H}px` }"
-              :title="isFree(col, m) ? `${minutesToTime(m)} — klik atau seret untuk booking` : undefined"
+              :title="canPick(col, m) ? `${minutesToTime(m)} — klik atau seret untuk booking` : undefined"
               @pointerdown="onPointerDown($event, col, m)"
               @pointerenter="onPointerEnter(col, m)"
               @click="onClick(col, m)"

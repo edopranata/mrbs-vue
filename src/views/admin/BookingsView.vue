@@ -11,7 +11,7 @@ import { useBookingModal } from '@/stores/bookingModal'
 import { useUiStore } from '@/stores/ui'
 
 /**
- * Pantauan admin: booking hari ini yang sedang berlangsung & akan datang.
+ * Pantauan admin & View Only: booking hari ini yang sedang berlangsung & akan datang.
  * Booking yang sudah selesai (atau dibatalkan) tidak ditampilkan; daftar diperbarui otomatis.
  */
 const modal = useBookingModal()

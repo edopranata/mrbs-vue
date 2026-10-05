@@ -69,7 +69,9 @@ const stats = computed(() => {
   return [
     { label: 'Ruangan dipakai sekarang', value: s?.rooms_in_use, suffix: s ? ` / ${s.rooms_total}` : '', icon: DoorOpen, cls: 'bg-emerald-50 text-emerald-600' },
     { label: 'Booking hari ini', value: s?.bookings_today, icon: CalendarCheck, cls: 'bg-indigo-50 text-indigo-600' },
-    { label: 'Booking saya (mendatang)', value: s?.my_upcoming, icon: CalendarClock, cls: 'bg-amber-50 text-amber-600' },
+    auth.isViewer
+      ? { label: 'Booking sedang berlangsung', value: dashboard.value?.ongoing?.length, icon: CalendarClock, cls: 'bg-amber-50 text-amber-600' }
+      : { label: 'Booking saya (mendatang)', value: s?.my_upcoming, icon: CalendarClock, cls: 'bg-amber-50 text-amber-600' },
     auth.isAdmin
       ? { label: 'User aktif', value: admin?.users_active, icon: Users, cls: 'bg-sky-50 text-sky-600' }
       : { label: 'Total ruang rapat', value: s?.rooms_total, icon: Building2, cls: 'bg-sky-50 text-sky-600' },
@@ -108,7 +110,7 @@ const maxUsage = computed(() => Math.max(1, ...(dashboard.value?.admin?.room_usa
 
     <div class="grid gap-6 xl:grid-cols-3">
       <!-- Status ruangan -->
-      <section class="card animate-rise xl:col-span-2" :style="stagger(4, 60)">
+      <section class="card animate-rise" :class="auth.isViewer ? 'xl:col-span-3' : 'xl:col-span-2'" :style="stagger(4, 60)">
         <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
           <h3 class="font-semibold text-slate-900">Status Ruangan Saat Ini</h3>
           <RouterLink :to="{ name: 'schedule' }" class="text-sm font-medium text-indigo-600 hover:underline">Lihat jadwal →</RouterLink>
@@ -132,24 +134,31 @@ const maxUsage = computed(() => Math.max(1, ...(dashboard.value?.admin?.room_usa
                     {{ room.current ? 'Dipakai' : 'Kosong' }}
                   </span>
                 </div>
-                <button
-                  v-if="room.current"
-                  class="mt-2 block w-full truncate text-left text-xs text-slate-600 hover:text-slate-900"
-                  @click="modal.show(room.current)"
-                >
-                  {{ room.current.start_time }}–{{ room.current.end_time }} · {{ room.current.title }}
-                </button>
-                <p class="mt-1 truncate text-xs text-slate-500">
-                  <template v-if="room.next">Berikutnya {{ room.next.start_time }}: {{ room.next.title }}</template>
-                  <template v-else>Tidak ada booking lagi hari ini</template>
-                </p>
-                <button
-                  v-if="!room.current"
-                  class="mt-2 text-xs font-medium text-indigo-600 hover:underline"
-                  @click="modal.create({ room_id: room.id })"
-                >
-                  + Pesan ruangan ini
-                </button>
+                <!-- Struktur tetap (judul + 2 baris) agar semua kartu sama tinggi, "Dipakai" maupun "Kosong". -->
+                <div class="mt-2 space-y-1 text-xs leading-5">
+                  <button
+                    v-if="room.current"
+                    class="block w-full truncate text-left text-slate-600 hover:text-slate-900"
+                    @click="modal.show(room.current)"
+                  >
+                    {{ room.current.start_time }}–{{ room.current.end_time }} · {{ room.current.title }}
+                  </button>
+                  <p class="truncate text-slate-500">
+                    <template v-if="room.next">Berikutnya {{ room.next.start_time }}: {{ room.next.title }}</template>
+                    <template v-else>Tidak ada booking lagi hari ini</template>
+                  </p>
+                  <template v-if="!room.current">
+                    <button
+                      v-if="!auth.isViewer"
+                      class="block font-medium text-indigo-600 hover:underline"
+                      @click="modal.create({ room_id: room.id })"
+                    >
+                      + Pesan ruangan ini
+                    </button>
+                    <!-- View Only: baris kosong pengganti tombol pesan -->
+                    <p v-else aria-hidden="true">&nbsp;</p>
+                  </template>
+                </div>
               </div>
             </div>
           </div>
@@ -163,7 +172,7 @@ const maxUsage = computed(() => Math.max(1, ...(dashboard.value?.admin?.room_usa
       </section>
 
       <!-- Booking saya -->
-      <section class="card animate-rise self-start" :style="stagger(5, 60)">
+      <section v-if="!auth.isViewer" class="card animate-rise self-start" :style="stagger(5, 60)">
         <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
           <h3 class="font-semibold text-slate-900">Booking Saya Berikutnya</h3>
           <RouterLink :to="{ name: 'my-bookings' }" class="text-sm font-medium text-indigo-600 hover:underline">Semua →</RouterLink>

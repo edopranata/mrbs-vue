@@ -23,7 +23,7 @@ const routes = [
         path: 'admin/booking',
         name: 'admin-bookings',
         component: () => import('@/views/admin/BookingsView.vue'),
-        meta: { admin: true, title: 'Semua Booking' },
+        meta: { monitor: true, title: 'Semua Booking' },
       },
       {
         path: 'admin/users',
@@ -46,6 +46,9 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 })
+
+// Halaman yang boleh dibuka akun View Only (Profil tetap ada untuk ganti password).
+const VIEWER_ROUTES = ['dashboard', 'schedule', 'admin-bookings', 'profile', 'login']
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
@@ -70,6 +73,8 @@ router.beforeEach(async (to) => {
 
   if (to.meta.guest && auth.isLoggedIn) return { name: 'dashboard' }
   if (to.meta.admin && !auth.isAdmin) return { name: 'dashboard' }
+  if (to.meta.monitor && !auth.canMonitor) return { name: 'dashboard' }
+  if (auth.isViewer && !VIEWER_ROUTES.includes(to.name)) return { name: 'dashboard' }
   if (to.meta.systemAdmin && !auth.isSystemAdmin) return { name: 'dashboard' }
 })
 

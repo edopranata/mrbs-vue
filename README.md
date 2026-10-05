@@ -15,6 +15,7 @@ terpisah: [edopranata/mrbs-backend](https://github.com/edopranata/mrbs-backend).
 - **Ruangan**: daftar ruang rapat per lantai beserta kapasitas & fasilitas.
 - **Admin**: **Semua Booking** (pantauan booking hari ini yang sedang berlangsung & akan datang,
   diperbarui otomatis), manajemen ruangan & user.
+- **View Only**: hanya melihat Dashboard, Jadwal Ruangan, dan Semua Booking (tidak bisa membuat booking).
 - **System Admin**: menu **Pengaturan** (nama aplikasi, jam operasional, interval slot, aturan
   booking).
 - Tampilan responsif (desktop sampai HP) dengan animasi halus; animasi otomatis dimatikan bila
