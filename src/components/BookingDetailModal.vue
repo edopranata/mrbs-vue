@@ -1,6 +1,6 @@
 <script setup>
 import { Building2, CalendarDays, Clock, Loader2, Pencil, Repeat, Trash2, User, Users, XCircle } from 'lucide-vue-next'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import BaseModal from './BaseModal.vue'
 import StatusBadge from './StatusBadge.vue'
 import api, { errorMessage } from '@/lib/api'
@@ -21,6 +21,8 @@ const reason = ref('')
 const busy = ref(false)
 const series = ref(null) // { total, position, following_cancellable } untuk booking berulang
 const cancelScope = ref('single')
+// Hapus permanen: dari server (can.delete); data lama tanpa field itu → admin.
+const canDelete = computed(() => booking.value.can?.delete ?? auth.isAdmin)
 
 // Data dari jadwal tidak selalu memuat relasi ruangan, jadi ambil versi lengkapnya.
 onMounted(async () => {
@@ -87,6 +89,7 @@ async function deleteBooking() {
         <Repeat class="size-3" />
         Mingguan<template v-if="series"> · minggu ke-{{ series.position }} dari {{ series.total }}</template>
       </span>
+      <span v-if="booking.is_legacy" class="badge bg-amber-50 text-amber-700">Dari MRBS lama</span>
     </div>
 
     <dl class="mt-4 space-y-3 text-sm">
@@ -124,6 +127,10 @@ async function deleteBooking() {
       {{ booking.description }}
     </div>
 
+    <div v-if="booking.legacy_locked" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+      Booking ini berasal dari MRBS lama. Selama masa transisi, ubah atau batalkan di MRBS lama;
+      perubahannya akan tersinkron otomatis.
+    </div>
     <div v-if="booking.status === 'cancelled'" class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
       Dibatalkan<span v-if="booking.cancelled_by"> oleh {{ booking.cancelled_by }}</span>.
       <span v-if="booking.cancel_reason">Alasan: {{ booking.cancel_reason }}</span>
@@ -154,8 +161,8 @@ async function deleteBooking() {
       </div>
     </Transition>
 
-    <template v-if="!cancelMode && (booking.can?.update || booking.can?.cancel || auth.isAdmin)" #footer>
-      <button v-if="auth.isAdmin" class="btn-ghost mr-auto text-red-600 hover:bg-red-50" @click="deleteBooking">
+    <template v-if="!cancelMode && (booking.can?.update || booking.can?.cancel || canDelete)" #footer>
+      <button v-if="canDelete" class="btn-ghost mr-auto text-red-600 hover:bg-red-50" @click="deleteBooking">
         <Trash2 class="size-4" /> Hapus
       </button>
       <button v-if="booking.can?.cancel" class="btn-secondary text-red-600" @click="cancelMode = true">
