@@ -5,6 +5,7 @@ import {
   CalendarPlus,
   ClipboardList,
   Download,
+  History,
   LayoutDashboard,
   ListChecks,
   Settings,
@@ -51,6 +52,7 @@ const menu = computed(() => (auth.isViewer ? viewerMenu : mainMenu))
 const adminMenu = [
   { name: 'admin-bookings', label: 'Semua Booking', icon: ListChecks },
   { name: 'admin-users', label: 'Manajemen User', icon: Users },
+  { name: 'admin-audit', label: 'Audit Log', icon: History },
   { name: 'admin-settings', label: 'Pengaturan', icon: Settings, systemAdmin: true },
 ]
 const visibleAdminMenu = computed(() => adminMenu.filter((item) => !item.systemAdmin || auth.isSystemAdmin))

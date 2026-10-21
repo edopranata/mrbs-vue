@@ -32,6 +32,12 @@ const routes = [
         meta: { admin: true, title: 'Manajemen User' },
       },
       {
+        path: 'admin/audit-log',
+        name: 'admin-audit',
+        component: () => import('@/views/admin/AuditLogView.vue'),
+        meta: { admin: true, title: 'Audit Log' },
+      },
+      {
         path: 'admin/pengaturan',
         name: 'admin-settings',
         component: () => import('@/views/admin/SettingsView.vue'),
