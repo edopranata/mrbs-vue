@@ -1,5 +1,5 @@
 <script setup>
-import { ArrowRight, Search, X } from 'lucide-vue-next'
+import { ArrowRight, Search, UserRound, X } from 'lucide-vue-next'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseModal from '@/components/BaseModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -25,18 +25,22 @@ const CATEGORY_BADGE = {
 const FAILED = ['auth.login_failed']
 
 const filters = reactive({ search: '', category: '', from: '', to: '' })
+// Pelaku yang sedang dilihat: akun (id) atau pelaku tanpa akun ("Sistem", username login gagal).
+const actor = ref(null) // { id, name, username } | { name }
 const logs = ref([])
 const meta = ref(null)
 const categories = ref({})
 const retentionDays = ref(null)
 const loading = ref(false)
-const hasFilter = computed(() => Object.values(filters).some(Boolean))
+const hasFilter = computed(() => Object.values(filters).some(Boolean) || Boolean(actor.value))
 
 async function load(page = 1) {
   loading.value = true
   try {
     const params = { page }
     for (const [key, value] of Object.entries(filters)) if (value) params[key] = value
+    if (actor.value?.id) params.user_id = actor.value.id
+    else if (actor.value) params.user_name = actor.value.name
     const { data } = await api.get('/audit-logs', { params })
     logs.value = data.data
     meta.value = data.meta
@@ -57,10 +61,19 @@ watch(
     timer = setTimeout(() => load(), 300)
   },
 )
+watch(actor, () => load())
 onMounted(load)
 
 function resetFilters() {
   Object.assign(filters, { search: '', category: '', from: '', to: '' })
+  actor.value = null
+}
+
+/** Tampilkan seluruh aktivitas pelaku catatan ini. */
+function showActor(log) {
+  actor.value = log.user ? { ...log.user } : { name: log.user_name }
+  detail.value = null
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const time = (iso) => iso.slice(11, 19)
@@ -92,9 +105,26 @@ const detail = ref(null)
       <button v-if="hasFilter" class="btn-ghost justify-center" @click="resetFilters"><X class="size-4" /> Reset</button>
     </div>
 
+    <!-- Sedang melihat aktivitas satu pengguna -->
+    <div v-if="actor" class="flex flex-wrap items-center gap-3 border-b border-indigo-100 bg-indigo-50 px-4 py-3 sm:px-5">
+      <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-indigo-600"><UserRound class="size-5" /></span>
+      <p class="min-w-0 flex-1 text-sm text-indigo-900">
+        Aktivitas <span class="font-semibold">{{ actor.name }}</span
+        ><span v-if="actor.username" class="text-indigo-700"> @{{ actor.username }}</span
+        ><span v-if="meta" class="text-indigo-700"> · {{ meta.total }} catatan</span>
+      </p>
+      <button class="btn-secondary btn-sm" @click="actor = null"><X class="size-4" /> Semua pengguna</button>
+    </div>
+
     <ul v-if="logs.length" class="divide-y divide-slate-100">
       <li v-for="(log, i) in logs" :key="log.id" class="animate-rise" :style="stagger(i, 20)">
-        <button class="flex w-full min-w-0 gap-4 px-4 py-3 text-left transition-colors hover:bg-slate-50 sm:px-5" @click="detail = log">
+        <div
+          role="button"
+          tabindex="0"
+          class="flex w-full min-w-0 cursor-pointer gap-4 px-4 py-3 text-left transition-colors hover:bg-slate-50 sm:px-5"
+          @click="detail = log"
+          @keydown.enter="detail = log"
+        >
           <span class="w-20 shrink-0 text-xs leading-5 text-slate-500 tabular-nums sm:w-24">
             <span class="block">{{ formatDate(log.created_at, { day: 'numeric', month: 'short' }) }}</span>
             <span class="block font-medium text-slate-700">{{ time(log.created_at) }}</span>
@@ -104,7 +134,16 @@ const detail = ref(null)
               <span class="badge" :class="FAILED.includes(log.action) ? 'bg-red-50 text-red-700' : CATEGORY_BADGE[log.category]">
                 {{ log.action_label }}
               </span>
-              <span class="text-sm font-medium text-slate-900">{{ log.user_name }}</span>
+              <button
+                v-if="!actor"
+                type="button"
+                class="text-sm font-medium text-slate-900 hover:text-indigo-600 hover:underline"
+                :title="`Lihat semua aktivitas ${log.user_name}`"
+                @click.stop="showActor(log)"
+              >
+                {{ log.user_name }}
+              </button>
+              <span v-else class="text-sm font-medium text-slate-900">{{ log.user_name }}</span>
             </span>
             <span class="mt-0.5 block break-words text-sm text-slate-600 line-clamp-2">{{ log.description }}</span>
             <span v-if="log.changes.length" class="mt-0.5 block truncate text-xs text-slate-500">
@@ -112,7 +151,7 @@ const detail = ref(null)
             </span>
           </span>
           <span class="hidden shrink-0 text-xs text-slate-400 tabular-nums md:block">{{ log.ip_address }}</span>
-        </button>
+        </div>
       </li>
     </ul>
     <EmptyState
@@ -149,6 +188,9 @@ const detail = ref(null)
               {{ detail.user_name }}
               <span v-if="detail.user" class="font-normal text-slate-500">@{{ detail.user.username }}</span>
             </dd>
+            <button type="button" class="mt-0.5 text-xs font-medium text-indigo-600 hover:underline" @click="showActor(detail)">
+              Lihat semua aktivitas pengguna ini →
+            </button>
           </div>
           <div>
             <dt class="text-xs text-slate-500">Alamat IP</dt>
