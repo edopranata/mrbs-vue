@@ -127,10 +127,6 @@ async function deleteBooking() {
       {{ booking.description }}
     </div>
 
-    <div v-if="booking.legacy_locked" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-      Booking ini berasal dari MRBS lama. Selama masa transisi, ubah atau batalkan di MRBS lama;
-      perubahannya akan tersinkron otomatis.
-    </div>
     <div v-if="booking.status === 'cancelled'" class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
       Dibatalkan<span v-if="booking.cancelled_by"> oleh {{ booking.cancelled_by }}</span>.
       <span v-if="booking.cancel_reason">Alasan: {{ booking.cancel_reason }}</span>

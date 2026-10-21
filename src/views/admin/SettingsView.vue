@@ -1,5 +1,5 @@
 <script setup>
-import { AlertCircle, Clock, Info, Loader2, RotateCcw, Save, Settings2, Type } from 'lucide-vue-next'
+import { AlertCircle, BrushCleaning, Clock, Info, Loader2, Play, RotateCcw, Save, Settings2, Type } from 'lucide-vue-next'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import api, { errorMessage, validationErrors } from '@/lib/api'
@@ -19,10 +19,12 @@ const defaults = ref({})
 const errors = ref({})
 const loading = ref(true)
 const saving = ref(false)
+const maintenance = ref({})
 
 function fill(data) {
   saved.value = { ...data.values }
   defaults.value = data.defaults
+  maintenance.value = data.maintenance ?? {}
   Object.assign(form, data.values)
 }
 
@@ -129,6 +131,42 @@ onBeforeRouteLeave(async () => {
     danger: true,
   })
 })
+
+// ---- Pemeliharaan otomatis ----
+const MAINTENANCE_FIELDS = [
+  { key: 'audit_retention_days', label: 'Masa simpan audit log', max: 3650, off: 'simpan selamanya' },
+  { key: 'log_retention_days', label: 'Masa simpan file log', max: 365, off: 'tidak dihapus' },
+  { key: 'cache_clear_days', label: 'Kosongkan seluruh cache tiap', max: 90, off: 'tidak otomatis' },
+]
+const clearCacheNow = ref(false)
+const running = ref(false)
+const lastRun = computed(() =>
+  maintenance.value.last_run_at
+    ? new Date(maintenance.value.last_run_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+    : null,
+)
+
+async function runMaintenance() {
+  const ok = await ui.confirm({
+    title: 'Jalankan pembersihan sekarang?',
+    message:
+      'Audit log dan isi file log yang melewati masa simpan, cache kedaluwarsa, dan sesi lama akan dihapus' +
+      (clearCacheNow.value ? ', dan seluruh cache dikosongkan.' : '.'),
+    confirmText: 'Jalankan',
+  })
+  if (!ok) return
+  running.value = true
+  try {
+    const { data } = await api.post('/settings/maintenance', { clear_cache: clearCacheNow.value })
+    maintenance.value = data.maintenance
+    clearCacheNow.value = false
+    ui.success(data.maintenance.last_summary ?? 'Pembersihan selesai.')
+  } catch (e) {
+    ui.error(errorMessage(e))
+  } finally {
+    running.value = false
+  }
+}
 
 const sections = [
   { key: 'identity', title: 'Identitas Aplikasi', icon: Type, description: 'Tampil di sidebar, halaman login, dan judul tab browser.' },
@@ -315,6 +353,67 @@ const sections = [
           </div>
         </section>
       </div>
+
+      <!-- Pemeliharaan otomatis -->
+      <section class="card animate-rise" :style="stagger(4, 70)">
+        <header class="flex items-start gap-3 border-b border-slate-200 px-5 py-4">
+          <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <BrushCleaning class="size-5" />
+          </div>
+          <div>
+            <h2 class="font-semibold text-slate-900">Pemeliharaan Otomatis</h2>
+            <p class="text-xs text-slate-500">
+              Dijalankan cron setiap hari pukul {{ maintenance.time || '01:00' }} agar aplikasi tetap ringan. Cache kedaluwarsa dan
+              sesi lama selalu dibuang. Isi 0 untuk menonaktifkan.
+            </p>
+          </div>
+        </header>
+        <div class="grid grid-cols-1 gap-5 p-5 md:grid-cols-3">
+          <div v-for="f in MAINTENANCE_FIELDS" :key="f.key">
+            <div class="flex items-center justify-between">
+              <label class="label" :for="`s-${f.key}`">{{ f.label }}</label>
+              <button v-if="isCustom(f.key)" type="button" class="text-xs text-indigo-600 hover:underline" @click="useDefault(f.key)">↺ default</button>
+            </div>
+            <div class="relative">
+              <input
+                :id="`s-${f.key}`"
+                v-model.number="form[f.key]"
+                type="number"
+                min="0"
+                :max="f.max"
+                class="input pr-14"
+                :class="{ 'input-error': errors[f.key] }"
+              />
+              <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-400">hari</span>
+            </div>
+            <p v-if="errors[f.key]" class="field-error">{{ errors[f.key] }}</p>
+            <p v-else class="mt-1 text-xs text-slate-400">
+              <template v-if="form[f.key] === 0">0 = {{ f.off }}. </template>Default: {{ defaults[f.key] }} hari
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-slate-200 px-5 py-3">
+          <p class="w-full min-w-0 text-sm text-slate-500 sm:w-auto sm:flex-1">
+            <template v-if="lastRun">
+              Terakhir dijalankan {{ lastRun }}: <span class="text-slate-700">{{ maintenance.last_summary }}</span>
+            </template>
+            <template v-else>Belum pernah dijalankan.</template>
+          </p>
+          <label class="flex cursor-pointer select-none items-center gap-2 text-sm text-slate-600">
+            <input v-model="clearCacheNow" type="checkbox" class="size-4 rounded accent-indigo-600" /> Kosongkan seluruh cache juga
+          </label>
+          <button
+            class="btn-secondary"
+            :disabled="running || isDirty"
+            :title="isDirty ? 'Simpan pengaturan terlebih dahulu' : undefined"
+            @click="runMaintenance"
+          >
+            <Loader2 v-if="running" class="size-4 animate-spin" />
+            <Play v-else class="size-4" />
+            Jalankan sekarang
+          </button>
+        </div>
+      </section>
     </template>
 
     <!-- Bar simpan: muncul saat ada perubahan -->
