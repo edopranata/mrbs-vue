@@ -18,11 +18,13 @@ import {
   startOfWeek,
   todayStr,
 } from '@/lib/format'
+import { useAuthStore } from '@/stores/auth'
 import { useBookingModal } from '@/stores/bookingModal'
 import { useUiStore } from '@/stores/ui'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const modal = useBookingModal()
 const ui = useUiStore()
 
@@ -203,6 +205,30 @@ onBeforeUnmount(() => clearInterval(refresher))
 function selectSlot({ room, date: day, start_time, end_time }) {
   modal.create({ room_id: room.id, date: day, start_time, end_time })
 }
+
+/** Booking diseret ke jam / ruangan / hari lain: konfirmasi lalu simpan. */
+async function moveBooking({ booking, room, date: day, start_time, end_time }) {
+  const where = room.id === booking.room.id ? '' : ` di ${room.name}`
+  const ok = await ui.confirm({
+    title: 'Pindahkan booking?',
+    message:
+      `"${booking.title}" dipindah ke ${formatDate(day)}, ${start_time}–${end_time}${where}.` +
+      (booking.is_recurring ? ' Hanya tanggal ini yang dipindah; minggu lain dalam seri tidak berubah.' : ''),
+    confirmText: 'Ya, pindahkan',
+  })
+  if (!ok) return
+  try {
+    await api.put(`/bookings/${booking.id}`, {
+      room_id: room.id,
+      start_at: `${day} ${start_time}`,
+      end_at: `${day} ${end_time}`,
+    })
+    ui.success('Booking berhasil dipindahkan.')
+    modal.changed()
+  } catch (e) {
+    ui.error(errorMessage(e))
+  }
+}
 </script>
 
 <template>
@@ -292,6 +318,7 @@ function selectSlot({ room, date: day, start_time, end_time }) {
               :open-time="schedule.open_time"
               :close-time="schedule.close_time"
               @select="selectSlot"
+              @move="moveBooking"
               @open="modal.show"
             />
             <EmptyState v-else title="Tidak ada ruangan aktif" />
@@ -322,7 +349,8 @@ function selectSlot({ room, date: day, start_time, end_time }) {
         <span class="flex items-center gap-1.5 text-slate-500">
           <Info class="size-4" />
           <template v-if="view === 'month'">Klik tanggal untuk melihat jadwal harian.</template>
-          <template v-else>Klik slot kosong, atau seret beberapa slot, untuk membuat booking.</template>
+          <template v-else-if="auth.isViewer">Klik booking untuk melihat detailnya.</template>
+          <template v-else>Klik slot kosong, atau seret beberapa slot, untuk membuat booking. Seret booking untuk memindahkannya.</template>
         </span>
       </div>
     </div>

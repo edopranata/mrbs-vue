@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/stores/settings'
 /**
  * Grid jadwal vertikal: baris = slot waktu, kolom = ruangan (tampilan hari)
  * atau hari (tampilan minggu). Klik / seret pada slot kosong untuk memilih jam.
+ * Booking yang boleh diubah bisa diseret (mouse) ke jam / ruangan / hari lain → event `move`.
  *
  * columns: [{ key, label, sublabel?, highlight?, date: 'YYYY-MM-DD', room, bookings: [] }]
  */
@@ -20,7 +21,7 @@ const props = defineProps({
   closeTime: { type: String, default: '20:00' },
   highlightMine: { type: Boolean, default: false }, // pudarkan booking milik orang lain
 })
-const emit = defineEmits(['select', 'open'])
+const emit = defineEmits(['select', 'open', 'move'])
 
 const ROW_H = 28 // px per baris
 
@@ -103,8 +104,9 @@ function finish() {
   })
 }
 
-function onPointerUp() {
+function onPointerUp(e) {
   if (dragging.value) finish()
+  if (pending || moving.value) endMove(e)
 }
 
 // Sentuhan (HP/tablet): tap = pilih satu slot, tanpa seret agar tetap bisa scroll.
@@ -118,6 +120,8 @@ window.addEventListener('pointerup', onPointerUp)
 onBeforeUnmount(() => {
   clearInterval(ticker)
   window.removeEventListener('pointerup', onPointerUp)
+  window.removeEventListener('pointermove', onMovePointer)
+  window.removeEventListener('keydown', onKey)
 })
 
 // Sorotan pilihan dipertahankan selama dialog booking terbuka.
@@ -127,6 +131,90 @@ watch(
     if (!isOpen && !dragging.value) selection.value = null
   },
 )
+
+// ---- Pindah booking: seret blok booking dengan mouse ----
+const DRAG_THRESHOLD = 5 // px; gerakan lebih kecil tetap dianggap klik (buka detail)
+const canMove = (b) => !auth.isViewer && Boolean(b.can?.update)
+const duration = (b) => timeToMinutes(b.end_time) - timeToMinutes(b.start_time)
+const moving = ref(null) // { booking, from: col, grab, target: { col, start } | null }
+let pending = null // pointerdown pada blok, belum melewati ambang seret
+let suppressClick = false
+
+/** Kolom & menit slot di bawah pointer (blok yang diseret tidak menangkap pointer). */
+function slotUnderPointer(e) {
+  const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-col]')
+  if (!el) return null
+  const row = Math.floor((e.clientY - el.getBoundingClientRect().top) / ROW_H)
+  return { col: props.columns[Number(el.dataset.col)], m: open.value + row * SLOT }
+}
+
+function onBlockPointerDown(e, col, b) {
+  if (e.pointerType !== 'mouse' || e.button !== 0 || !canMove(b)) return
+  e.preventDefault() // jangan mulai memblok teks
+  const hit = slotUnderPointer(e)
+  pending = { booking: b, from: col, x: e.clientX, y: e.clientY, grab: hit ? hit.m - timeToMinutes(b.start_time) : 0 }
+  window.addEventListener('pointermove', onMovePointer)
+}
+
+function onMovePointer(e) {
+  if (!moving.value) {
+    if (!pending || Math.hypot(e.clientX - pending.x, e.clientY - pending.y) < DRAG_THRESHOLD) return
+    moving.value = { booking: pending.booking, from: pending.from, grab: pending.grab, target: null }
+  }
+  const hit = slotUnderPointer(e)
+  if (!hit?.col) return
+  const len = duration(moving.value.booking)
+  const start = Math.min(Math.max(hit.m - moving.value.grab, open.value), close.value - len)
+  moving.value.target = { col: hit.col, start: start - ((start - open.value) % SLOT) }
+}
+
+/** Alasan target tidak bisa dipakai, atau null bila boleh. */
+const moveProblem = computed(() => {
+  const mv = moving.value
+  if (!mv?.target) return null
+  const { col, start } = mv.target
+  const end = start + duration(mv.booking)
+  if (isPast(col, start)) return 'Sudah lewat'
+  if (col.room && mv.booking.participants > col.room.capacity) return 'Kapasitas kurang'
+  const clash = col.bookings.some(
+    (o) => o.id !== mv.booking.id && timeToMinutes(o.start_time) < end && timeToMinutes(o.end_time) > start,
+  )
+  return clash ? 'Bentrok' : null
+})
+const moveChanged = computed(() => {
+  const mv = moving.value
+  return mv?.target && (mv.target.col.key !== mv.from.key || mv.target.start !== timeToMinutes(mv.booking.start_time))
+})
+
+function endMove(e) {
+  window.removeEventListener('pointermove', onMovePointer)
+  pending = null
+  const mv = moving.value
+  if (!mv) return
+  const droppable = e?.type === 'pointerup' && mv.target && !moveProblem.value && moveChanged.value
+  moving.value = null
+  suppressClick = true // klik yang menyusul pointerup tidak membuka detail
+  setTimeout(() => (suppressClick = false))
+  if (!droppable) return
+  const { col, start } = mv.target
+  emit('move', {
+    booking: mv.booking,
+    room: col.room,
+    date: col.date,
+    start_time: minutesToTime(start),
+    end_time: minutesToTime(start + duration(mv.booking)),
+  })
+}
+
+// Esc membatalkan seret.
+function onKey(e) {
+  if (e.key === 'Escape' && moving.value) endMove()
+}
+window.addEventListener('keydown', onKey)
+
+function onBlockClick(b) {
+  if (!suppressClick) emit('open', b)
+}
 
 // ---- Header menempel: samakan posisi scroll horizontal header & isi grid ----
 const headerEl = ref(null)
@@ -159,7 +247,7 @@ function slotClass(col, m, i) {
 </script>
 
 <template>
-  <div :class="{ 'select-none': dragging }">
+  <div :class="{ 'select-none': dragging || moving, 'cursor-grabbing [&_*]:!cursor-grabbing': moving }">
     <!-- Header waktu & nama ruangan/hari: menempel tepat di bawah header aplikasi saat halaman
          di-scroll. Scroll horizontalnya disinkronkan dua arah dengan isi grid. -->
     <div
@@ -204,7 +292,7 @@ function slotClass(col, m, i) {
           :key="col.key"
           class="min-w-28 flex-1 border-r border-slate-200 last:border-r-0"
         >
-          <div class="relative">
+          <div class="relative" :data-col="ci">
             <div
               v-for="(m, i) in slots"
               :key="m"
@@ -229,6 +317,24 @@ function slotClass(col, m, i) {
               {{ minutesToTime(selRange.from) }}–{{ minutesToTime(selRange.to + SLOT) }}
             </div>
 
+            <!-- Tujuan booking yang sedang diseret -->
+            <div
+              v-if="moving?.target?.col.key === col.key"
+              class="pointer-events-none absolute inset-x-0.5 z-20 rounded-sm border-2 border-dashed px-1.5 py-0.5 text-[11px] font-semibold shadow-lg"
+              :class="moveProblem ? 'border-red-500 bg-red-500/15 text-red-800' : 'border-indigo-500 bg-indigo-500/15 text-indigo-800'"
+              :style="{
+                top: `${((moving.target.start - open) / SLOT) * ROW_H}px`,
+                height: `${(duration(moving.booking) / SLOT) * ROW_H - 1}px`,
+              }"
+            >
+              <p class="truncate">
+                {{ minutesToTime(moving.target.start) }}–{{ minutesToTime(moving.target.start + duration(moving.booking)) }}
+                <template v-if="moveProblem"> · {{ moveProblem }}</template>
+                <template v-else-if="!moveChanged"> · Posisi semula</template>
+              </p>
+              <p class="truncate font-normal opacity-80">{{ moving.booking.title }}</p>
+            </div>
+
             <!-- Booking -->
             <button
               v-for="b in col.bookings"
@@ -240,10 +346,15 @@ function slotClass(col, m, i) {
                 b.user_id === auth.user?.id
                   ? 'ring-2 ring-indigo-500 ring-inset'
                   : highlightMine && 'opacity-30 saturate-0 hover:opacity-80 hover:saturate-100',
+                canMove(b) && 'cursor-grab',
+                // Saat menyeret, blok tidak menangkap pointer agar slot di bawahnya terbaca.
+                moving && 'pointer-events-none',
+                moving?.booking.id === b.id && 'opacity-40',
               ]"
               :style="{ ...blockStyle(b), ...stagger(ci, 35) }"
-              :title="`${b.title}\n${b.start_time}–${b.end_time} · ${b.user?.name ?? ''}`"
-              @click="emit('open', b)"
+              :title="`${b.title}\n${b.start_time}–${b.end_time} · ${b.user?.name ?? ''}${canMove(b) ? '\nSeret untuk memindahkan jadwal/ruangan' : ''}`"
+              @pointerdown="onBlockPointerDown($event, col, b)"
+              @click="onBlockClick(b)"
             >
               <p class="text-xs font-semibold leading-snug" :class="blockRows(b) < 2 ? 'truncate' : 'line-clamp-3'">
                 <Repeat v-if="b.is_recurring" class="mr-0.5 inline size-3 align-[-1px] opacity-70" aria-label="Berulang mingguan" />{{ b.title }}

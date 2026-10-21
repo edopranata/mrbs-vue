@@ -108,17 +108,17 @@ const maxUsage = computed(() => Math.max(1, ...(dashboard.value?.admin?.room_usa
       </div>
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
       <!-- Status ruangan -->
       <section class="card animate-rise" :class="auth.isViewer ? 'xl:col-span-3' : 'xl:col-span-2'" :style="stagger(4, 60)">
         <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
           <h3 class="font-semibold text-slate-900">Status Ruangan Saat Ini</h3>
           <RouterLink :to="{ name: 'schedule' }" class="text-sm font-medium text-indigo-600 hover:underline">Lihat jadwal →</RouterLink>
         </div>
-        <div class="grid gap-5 p-5 2xl:grid-cols-2">
+        <div class="grid grid-cols-1 gap-5 p-5 2xl:grid-cols-2">
           <div v-for="(group, gi) in roomStatus" :key="group.floor" class="animate-rise" :style="stagger(gi + 5, 60)">
             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Lantai {{ group.floor }}</p>
-            <div class="grid gap-3 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div
                 v-for="room in group.rooms"
                 :key="room.id"
